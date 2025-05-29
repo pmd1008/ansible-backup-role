@@ -1,0 +1,17 @@
+---
+- name: Backup files from source nodes
+  hosts: source_nodes
+  gather_facts: yes
+  roles:
+    - backup
+
+- name: Ensure backup directory exists on destination node
+  hosts: dest_node
+  vars_files:
+    - config.yml
+  tasks:
+    - name: Create backup directory on destination
+      ansible.builtin.file:
+        path: "{{ backup_dest_path }}"
+        state: directory
+        mode: '0755'

@@ -1,0 +1,29 @@
+---
+- name: Create temporary backup archive
+  ansible.builtin.shell: |
+    tar -czf /tmp/backup_{{ ansible_hostname }}_{{ ansible_date_time.iso8601 | replace(':', '-') }}.tar.gz -C {{ backup_source_dir }} .
+  args:
+    creates: /tmp/backup_*.tar.gz
+
+- name: Fetch backup archive to control machine
+  ansible.builtin.fetch:
+    src: /tmp/backup_{{ ansible_hostname }}_{{ ansible_date_time.iso8601 | replace(':', '-') }}.tar.gz
+    dest: /tmp/backup_{{ ansible_hostname }}.tar.gz
+    flat: yes
+
+- name: Copy backup archive to destination node
+  ansible.builtin.copy:
+    src: /tmp/backup_{{ ansible_hostname }}.tar.gz
+    dest: "{{ backup_dest_path }}/backup_{{ ansible_hostname }}_{{ ansible_date_time.iso8601 | replace(':', '-') }}.tar.gz"
+  delegate_to: "{{ groups['dest_node'][0] }}"
+
+- name: Remove temporary archive from source node
+  ansible.builtin.file:
+    path: /tmp/backup_{{ ansible_hostname }}_{{ ansible_date_time.iso8601 | replace(':', '-') }}.tar.gz
+    state: absent
+
+- name: Remove temporary archive from control machine
+  ansible.builtin.file:
+    path: /tmp/backup_{{ ansible_hostname }}.tar.gz
+    state: absent
+  delegate_to: localhost
